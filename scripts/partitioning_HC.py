@@ -60,7 +60,6 @@ class HC:
 	metadata:str = ''
 	filter_column:str = ''
 	dist:float = 1.0
-	df_dist:pandas.DataFrame = None
 
 	def __init__(self, out, **kwargs):
 		self.out = out
