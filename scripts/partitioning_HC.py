@@ -33,12 +33,9 @@ last_updated = "2023-02"
 def create_logger(out: str):
 	fh = logging.FileHandler(out + '.log', mode='a')
 	fh.setLevel(logging.DEBUG)
-	ch = logging.StreamHandler(sys.stdout)
-	ch.setLevel(logging.INFO)
 	logger = logging.getLogger()
 	logger.setLevel(logging.INFO)
 	logger.addHandler(fh)
-	logger.addHandler(ch)
 	return logger
 
 def generate_random_filename():
