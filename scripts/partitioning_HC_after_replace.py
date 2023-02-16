@@ -17,7 +17,7 @@ from datetime import date
 import logging
 import subprocess
 from io import StringIO
-from pathlib import Path
+import pathlib
 import uuid
 
 from pandas import DataFrame
@@ -32,22 +32,26 @@ last_updated = "2023-02"
 
 TMPDIR = os.getenv('TMPDIR', '/tmp')
 
-def create_logger(folder:Path, out:str):
-	fh = logging.FileHandler(Path(folder).joinpath(out + '.log'), mode='a')
+def create_logger(folder: str):
+	fh = logging.FileHandler(folder + '.log', mode='a')
 	fh.setLevel(logging.DEBUG)
+	ch = logging.StreamHandler(sys.stdout)
+	ch.setLevel(logging.INFO)
 	logger = logging.getLogger()
 	logger.setLevel(logging.INFO)
 	logger.addHandler(fh)
+	logger.addHandler(ch)
 	return logger
 
+def generate_random_filename():
+    return uuid.uuid4().hex[:8].upper()
 
 class HC:
 	"""
 	Instantiate this class when importing partitioning_HC into another code module;
 	then use the 'run' method to run the calculation.
 	"""
-	out:str = ''
-	folder:str = 'test'
+	folder:str
 	distance_matrix:str = ''
 	allele_profile:str = ''
 	allele_mx:DataFrame = None
@@ -58,18 +62,17 @@ class HC:
 	metadata:str = ''
 	filter_column:str = ''
 	dist:float = 1.0
+	df_dist:pandas.DataFrame = None
 
-	def __init__(self, job_folder_name, **kwargs):
-		self.folder = Path(TMPDIR).joinpath(job_folder_name)
+	def __init__(self, folder, **kwargs):
+		self.folder = folder
 		self.__dict__.update(kwargs)
 	
 	def allele_df_provided(self):
 		return "Not provided" if self.allele_mx is None else "Provided"
 	
 	def __str__(self):
-		return \
-			f"Folder: {self.folder}\n" + \
-			f"Output filename prefix: {self.out}\n" + \
+		return f"Folder: {self.folder}\n" + \
 			f"Allele profile filename: {self.allele_profile}\n" + \
 			f"Allele profile dataframe: {self.allele_df_provided()}\n" + \
 			f"Distance matrix filename: {self.distance_matrix}\n" + \
@@ -82,8 +85,7 @@ class HC:
 			f"Distances: {self.dist}"
 	
 	def run(self):
-		self.folder.mkdir()
-		self.logger = create_logger(self.folder, self.out)
+		self.logger = create_logger(self.folder)
 		self.logger.info("Running hierarchical clustering with these parameters:")
 		self.logger.info(self.__str__())
 		self.logger.info("")
@@ -109,13 +111,13 @@ class HC:
 	
 		self.logger.info("Creating sample partitions file...")
 		df_clustering = pandas.DataFrame(data = clustering)
-		df_clustering.to_csv(Path(args.folder).joinpath(args.out + "_partitions.tsv"), sep = "\t", index = None)
+		df_clustering.to_csv(args.folder + "_partitions.tsv", sep = "\t", index = None)
 		
 		
 		# output cluster composition
 		
 		self.logger.info("Creating cluster composition file...")
-		cluster_composition = get_cluster_composition(Path(args.folder).joinpath(args.out + "_clusterComposition.tsv"), cluster_details)
+		cluster_composition = get_cluster_composition(args.folder + "_clusterComposition.tsv", cluster_details)
 		#cluster_composition.to_csv(args.out + "_clusterComposition.tsv", index = False, header=True, sep ="\t")
 
 		self.logger.info("partitioning_HC.py is done!")
@@ -308,7 +310,7 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 			allele_mx = filter_mx(allele_mx, mx, filters, "allele", logger)
 			final_samples = len(allele_mx[allele_mx.columns[0]].values.tolist())
 			logger.info("\tFrom the " + str(initial_samples) + " samples, " + str(final_samples) + " were kept in the matrix...")
-			allele_mx.to_csv(Path(args.folder).joinpath(args.out + "_subset_matrix.tsv"), sep = "\t", index = None)
+			allele_mx.to_csv(args.folder + "_subset_matrix.tsv", sep = "\t", index = None)
 	
 	
 		# cleaning allele matrix (columns)	----------
@@ -321,7 +323,7 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 				values = allele_mx[col].values.tolist()
 				if (len(values)-values.count("0"))/len(values) < float(args.samples_called):
 					allele_mx = allele_mx.drop(columns=col)
-			allele_mx.to_csv(Path(args.folder).joinpath(args.out + "_flt_matrix.tsv"), index = False, header=True, sep ="\t")
+			allele_mx.to_csv(args.folder + "_flt_matrix.tsv", index = False, header=True, sep ="\t")
 			pos_t1 = len(allele_mx.columns[1:])
 			logger.info("\tFrom the " + str(pos_t0) + " loci/positions, " + str(pos_t1) + " were kept in the matrix.")
 		
@@ -354,8 +356,8 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 			logger.info("\tFrom the " + str(len(allele_mx[allele_mx.columns[0]].values.tolist())) + " samples, " + str(len(pass_samples)) + " were kept in the profile matrix.")
 			
 			allele_mx = allele_mx[allele_mx[allele_mx.columns[0]].isin(pass_samples)]
-			allele_mx.to_csv(Path(args.folder).joinpath(args.out + "_flt_matrix.tsv"), index = False, header=True, sep ="\t")
-			report_allele_df.to_csv(Path(args.folder).joinpath(args.out + "_loci_report.tsv"), index = False, header=True, sep ="\t")
+			allele_mx.to_csv(args.folder + "_flt_matrix.tsv", index = False, header=True, sep ="\t")
+			report_allele_df.to_csv(args.folder + "_loci_report.tsv", index = False, header=True, sep ="\t")
 			
 			
 		# getting distance matrix	----------
@@ -368,24 +370,31 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 
 
 		# save allele matrix to a file that cgmlst-dists can use for input
-		allele_mx_path = Path(TMPDIR, hc.out, hc.out + '_allele_mx.tsv')
-		allele_mx.to_csv(allele_mx_path, index = False, header=True, sep ="\t")
+		tmp_path = pathlib.Path(TMPDIR, generate_random_filename())
+		allele_mx.to_csv(tmp_path, index = False, header=True, sep ="\t")
 		total_size = len(allele_mx.columns) - 1
 		
 		
 		# run cgmlst-dists
 		cp1:subprocess.CompletedProcess = subprocess.run(
-			["cgmlst-dists", str(allele_mx_path)], capture_output=True, text=True)
+			["cgmlst-dists", str(tmp_path)], capture_output=True, text=True)
 		if cp1.returncode != 0:
-			logger.error(f"Could not run cgmlst-dists on {str(allele_mx_path)}!")
+			logger.error(f"Could not run cgmlst-dists on {str(tmp_path)}!")
 			logger.error(cp1.stderr)
 			raise IOError
 		
+		# remove temporary file
+		cp2:subprocess.CompletedProcess = subprocess.run(
+			["rm", str(tmp_path)], capture_output=True, text=True)
+		logger.info(cp2.stdout)
+		if cp2.returncode != 0:
+			logger.warning(f"Could not remove temporary file {str(tmp_path)}!")
+			logger.warning(cp2.stderr)
+		
 		temp_df = pandas.read_table(StringIO(cp1.stdout), dtype=str)
 		temp_df.rename(columns = {"cgmlst-dists": "dists"}, inplace = True)
-		# TODO here we are saving a file, then reading it. Why?
-		temp_df.to_csv(Path(args.folder).joinpath(args.out + "_dist.tsv"), sep = "\t", index = None)
-		dist = pandas.read_table(Path(args.folder).joinpath(args.out + "_dist.tsv"))
+		temp_df.to_csv(args.folder + "_dist.tsv", sep = "\t", index = None)
+		dist = pandas.read_table(args.folder + "_dist.tsv")
 		return dist
 
 def from_distance_matrix(hc=None, logger=None):
@@ -471,8 +480,6 @@ if __name__ == "__main__":
 	group0.add_argument("-d", "--dist", dest="dist", required=False, default=1.0, type=float, help="Distance unit by which partition thresholds will be multiplied (example: if -d 10 and \
 						--method-threshold single-2, the single linkage threshold will be set at 20).")
 	
-	args = parser.parse_args()
-
-	# We also use the 'out' argument for job_folder_name in the HC class
-	hc = HC(vars(args)['out'], **vars(args))
+	
+	hc = HC(**vars(parser.parse_args()))
 	hc.run()
