@@ -377,9 +377,10 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 		cp1:subprocess.CompletedProcess = subprocess.run(
 			["cgmlst-dists", str(allele_mx_path)], capture_output=True, text=True)
 		if cp1.returncode != 0:
-			logger.error(f"Could not run cgmlst-dists on {str(allele_mx_path)}!")
+			errmsg = (f"Could not run cgmlst-dists on {str(allele_mx_path)}!")
+			logger.error(errmsg)
 			logger.error(cp1.stderr)
-			raise IOError
+			raise OSError(errmsg)
 		
 		temp_df = pandas.read_table(StringIO(cp1.stdout), dtype=str)
 		temp_df.rename(columns = {"cgmlst-dists": "dists"}, inplace = True)
