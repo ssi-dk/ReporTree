@@ -1,1 +1,1 @@
-docker run --rm -it -v ~/rt_output:/home/myuser/rt_output reportree-ssi
+docker run --rm -it -v ./tmp:/tmp reportree-ssi
