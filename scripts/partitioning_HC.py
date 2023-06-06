@@ -369,7 +369,7 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 
 		# save allele matrix to a file that cgmlst-dists can use for input
 		allele_mx_path = Path(TMPDIR, hc.out, hc.out + '_allele_mx.tsv')
-		allele_mx.to_csv(allele_mx_path, index = False, header=True, sep ="\t")
+		allele_mx.to_csv(allele_mx_path, index = True, header=True, sep ="\t")
 		total_size = len(allele_mx.columns) - 1
 		
 		
