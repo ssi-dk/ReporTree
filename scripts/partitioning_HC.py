@@ -369,9 +369,9 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 
 		# save allele matrix to a file that cgmlst-dists can use for input
 		allele_mx_path = Path(TMPDIR, hc.out, hc.out + '_allele_mx.tsv')
-		allele_mx.to_csv(allele_mx_path, index = True, header=True, sep ="\t")
-		total_size = len(allele_mx.columns) - 1
-		
+		with open(allele_mx_path, 'w') as allele_mx_file_obj:
+			allele_mx_file_obj.write("ID")  # Without an initial string cgmlst-dists will fail!
+			allele_mx.to_csv(allele_mx_file_obj, index = True, header=True, sep ="\t")
 		
 		# run cgmlst-dists
 		cp1:subprocess.CompletedProcess = subprocess.run(
