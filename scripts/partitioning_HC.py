@@ -380,7 +380,7 @@ def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
 			errmsg = (f"Could not run cgmlst-dists on {str(allele_mx_path)}!")
 			logger.error(errmsg)
 			logger.error(cp1.stderr)
-			raise OSError(cp1.stderr)
+			raise OSError(errmsg + "\n\n" + cp1.stderr)
 		
 		temp_df = pandas.read_table(StringIO(cp1.stdout), dtype=str)
 		temp_df.rename(columns = {"cgmlst-dists": "dists"}, inplace = True)
