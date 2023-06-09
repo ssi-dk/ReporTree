@@ -41,7 +41,7 @@ def create_logger(folder:Path, out:str):
 	return logger
 
 
-class TreeCalc:
+class HCTreeCalc:
 	"""
 	Instantiate this class when importing partitioning_HC into another code module;
 	then use the 'run' method to run the calculation.
@@ -475,5 +475,5 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	# We also use the 'out' argument for job_folder_name in the HC class
-	hc = TreeCalc(vars(args)['out'], **vars(args))
+	hc = HCTreeCalc(vars(args)['out'], **vars(args))
 	hc.run()
