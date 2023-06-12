@@ -102,23 +102,9 @@ class HCTreeCalc:
 			self.logger.error(msg)
 			raise ValueError(msg)
 		
-		# Copy-pasted from main part
-		clustering, cluster_details = hierarchical_clustering(self.df_dist, self.logger, self)
-
-		# output partitions
-	
-		self.logger.info("Creating sample partitions file...")
-		df_clustering = pandas.DataFrame(data = clustering)
-		df_clustering.to_csv(Path(args.folder).joinpath(args.out + "_partitions.tsv"), sep = "\t", index = None)
-		
-		
-		# output cluster composition
-		
-		self.logger.info("Creating cluster composition file...")
-		cluster_composition = get_cluster_composition(Path(args.folder).joinpath(args.out + "_clusterComposition.tsv"), cluster_details)
-		#cluster_composition.to_csv(args.out + "_clusterComposition.tsv", index = False, header=True, sep ="\t")
-
+		newicks = hierarchical_clustering(self.df_dist, self.logger, self)
 		self.logger.info("partitioning_HC.py is done!")
+		return newicks
 
 
 # functions	----------

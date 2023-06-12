@@ -117,144 +117,19 @@ def hierarchical_clustering(df_dist, logger, args):
 			info_run = threshold,"general"
 			combinations2run[method].append(info_run)
 	
-	cluster_details = {}
-	
+	newicks = []
+	logger.info("Generating newick files...")
 	for method in combinations2run.keys():
 		logger.info("Hierarchical clustering with method: " + method + "...")
 		hc_matrix, max_dist = hcluster(condensed_dist_mx, method, logger)
-		
-		# get newick
-		
-		logger.info("Generating newick file...")
-	
 		tree = to_tree(hc_matrix, False)
 		nw = get_newick(tree, tree.dist, samples)
 		
+		# We might not need to save the newicks on files
 		with open(pathlib.Path(args.folder).joinpath(args.out + "_" + method + "_HC.nwk"), "w+") as newick_out:
 			print(nw, file = newick_out)
 		
-		# partitioning
-		
-		logger.info("Defining clusters...")
-		
-		
-		for threshold,request in combinations2run[method]:
-			if threshold == "all":
-				logger.info(f"Calculating clustering in range 0.0 - {str(max_dist)} with a distance of {str(args.dist)}")
-				for thr in range(0,int(max_dist) + 1):
-					partition = method + "-" + str(thr) + "x" + str(args.dist)
-					if partition not in cluster_details.keys():
-						cluster_details[partition] = {}
-					info_clusters = list(fcluster(hc_matrix, t = int(thr) * args.dist, criterion = "distance"))
-					# change cluster name according to cluster size
-					counter = {}
-					singleton_counter = 0
-					for cluster in set(info_clusters):
-						counter[cluster] = info_clusters.count(cluster)
-					for i in range(len(info_clusters)):
-						if counter[info_clusters[i]] == 1:
-							singleton_counter += 1
-							info_clusters[i] = "singleton_" + str(singleton_counter)
-							if info_clusters[i] not in cluster_details[partition].keys():
-								cluster_details[partition][info_clusters[i]] = {}
-								cluster_details[partition][info_clusters[i]][1] = []
-							cluster_details[partition][info_clusters[i]][1].append(distance_mx.columns[i])
-						else:
-							cluster_size = counter[info_clusters[i]]
-							info_clusters[i] = "cluster_" + str(info_clusters[i])
-							if info_clusters[i] not in cluster_details[partition].keys():
-								cluster_details[partition][info_clusters[i]] = {}
-								cluster_details[partition][info_clusters[i]][cluster_size] = []
-							cluster_details[partition][info_clusters[i]][cluster_size].append(distance_mx.columns[i])
-					clustering[partition] = info_clusters
-			else:
-				if "-" in threshold:
-					min_thr = int(threshold.split("-")[0])
-					max_thr = int(threshold.split("-")[1]) + 1
-					
-					if max_thr > max_dist:
-						max_thr = str(max_dist)
-					
-					logger.info("Calculating clustering in range",str(min_thr),str(max_thr),"with a distance of",str(args.dist))
-					for thr in range(min_thr,max_thr):
-						partition = method + "-" + str(thr) + "x" + str(args.dist)
-						if partition not in cluster_details.keys():
-							cluster_details[partition] = {}
-						info_clusters = list(fcluster(hc_matrix, t = thr * args.dist, criterion = "distance"))
-						# change cluster name according to cluster size
-						counter = {}
-						singleton_counter = 0
-						for cluster in set(info_clusters):
-							counter[cluster] = info_clusters.count(cluster)
-						for i in range(len(info_clusters)):
-							if counter[info_clusters[i]] == 1:
-								singleton_counter += 1
-								info_clusters[i] = "singleton_" + str(singleton_counter)
-								if info_clusters[i] not in cluster_details[partition].keys():
-									cluster_details[partition][info_clusters[i]] = {}
-									cluster_details[partition][info_clusters[i]][1] = []
-								cluster_details[partition][info_clusters[i]][1].append(distance_mx.columns[i])
-							else:
-								cluster_size = counter[info_clusters[i]]
-								info_clusters[i] = "cluster_" + str(info_clusters[i])
-								if info_clusters[i] not in cluster_details[partition].keys():
-									cluster_details[partition][info_clusters[i]] = {}
-									cluster_details[partition][info_clusters[i]][cluster_size] = []
-								cluster_details[partition][info_clusters[i]][cluster_size].append(distance_mx.columns[i])
-						clustering[partition] = info_clusters
-				else:
-					if request == "general":
-						partition = method + "-" + str(threshold) + "x" + str(args.dist)
-						if partition not in cluster_details.keys():
-							cluster_details[partition] = {}
-						logger.info("Calculating clustering for threshold",str(threshold),"with a distance of",str(args.dist))
-						info_clusters = list(fcluster(hc_matrix, t = int(threshold) * args.dist, criterion = "distance"))
-						# change cluster name according to cluster size
-						counter = {}
-						singleton_counter = 0
-						for cluster in set(info_clusters):
-							counter[cluster] = info_clusters.count(cluster)
-						for i in range(len(info_clusters)):
-							if counter[info_clusters[i]] == 1:
-								singleton_counter += 1
-								info_clusters[i] = "singleton_" + str(singleton_counter)
-								if info_clusters[i] not in cluster_details[partition].keys():
-									cluster_details[partition][info_clusters[i]] = {}
-									cluster_details[partition][info_clusters[i]][1] = []
-								cluster_details[partition][info_clusters[i]][1].append(distance_mx.columns[i])
-							else:
-								cluster_size = counter[info_clusters[i]]
-								info_clusters[i] = "cluster_" + str(info_clusters[i])
-								if info_clusters[i] not in cluster_details[partition].keys():
-									cluster_details[partition][info_clusters[i]] = {}
-									cluster_details[partition][info_clusters[i]][cluster_size] = []
-								cluster_details[partition][info_clusters[i]][cluster_size].append(distance_mx.columns[i])
-						clustering[partition] = info_clusters
-					elif request == "pct":
-						partition = method + "-" + str(threshold) + "_(" + "_".join(pct_correspondence[threshold]) + ")"
-						if partition not in cluster_details.keys():
-							cluster_details[partition] = {}
-						logger.info("Calculating clustering for threshold " + method + "-" + str(threshold) + ", which corresponds to the pct threshold of: " + ", ".join(pct_correspondence[threshold]))
-						info_clusters = list(fcluster(hc_matrix, t = int(threshold), criterion = "distance"))
-						# change cluster name according to cluster size
-						counter = {}
-						singleton_counter = 0
-						for cluster in set(info_clusters):
-							counter[cluster] = info_clusters.count(cluster)
-						for i in range(len(info_clusters)):
-							if counter[info_clusters[i]] == 1:
-								singleton_counter += 1
-								info_clusters[i] = "singleton_" + str(singleton_counter)
-								if info_clusters[i] not in cluster_details[partition].keys():
-									cluster_details[partition][info_clusters[i]] = {}
-									cluster_details[partition][info_clusters[i]][1] = []
-								cluster_details[partition][info_clusters[i]][1].append(distance_mx.columns[i])
-							else:
-								cluster_size = counter[info_clusters[i]]
-								info_clusters[i] = "cluster_" + str(info_clusters[i])
-								if info_clusters[i] not in cluster_details[partition].keys():
-									cluster_details[partition][info_clusters[i]] = {}
-									cluster_details[partition][info_clusters[i]][cluster_size] = []
-								cluster_details[partition][info_clusters[i]][cluster_size].append(distance_mx.columns[i])
-						clustering[partition] = info_clusters
-	return clustering, cluster_details
+		newicks.append(nw)
+
+	logger.info("Newick files generated.")
+	return newicks
