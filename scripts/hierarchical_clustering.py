@@ -117,7 +117,7 @@ def hierarchical_clustering(df_dist, logger, args):
 			info_run = threshold,"general"
 			combinations2run[method].append(info_run)
 	
-	newicks = []
+	newicks = {}
 	logger.info("Generating newick files...")
 	for method in combinations2run.keys():
 		logger.info("Hierarchical clustering with method: " + method + "...")
@@ -129,7 +129,7 @@ def hierarchical_clustering(df_dist, logger, args):
 		with open(pathlib.Path(args.folder).joinpath(args.out + "_" + method + "_HC.nwk"), "w+") as newick_out:
 			print(nw, file = newick_out)
 		
-		newicks.append(nw)
+		newicks[method] = nw
 
 	logger.info("Newick files generated.")
 	return newicks
