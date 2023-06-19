@@ -272,91 +272,13 @@ def get_newick(node, parent_dist, leaf_names, newick='') -> str:
         return newick
 
 def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
-		global args
-		if hc:
-			args = hc
-		if allele_mx is None:
-			allele_mx = pandas.read_table(args.allele_profile, dtype = str)
-		allele_mx = allele_mx.replace("INF-","", regex=True) #implemented because of chewie-ns profiles
-		allele_mx = allele_mx.replace("\*","", regex=True) #implemented because of chewie-ns profiles
-		allele_mx = allele_mx.replace({"N": "0", "a": "A", "c": "C", "t": "T", "g": "G"})
-		
-		
-		# filtering allele matrix	----------
-		
-		if args.metadata and args.filter_column:
-			logger.info("Filtering the distance matrix...")
-			
-			filters = args.filter_column
-			mx = pandas.read_table(args.metadata, dtype = str)
-			sample_column = mx.columns[0]
-			initial_samples = len(allele_mx[allele_mx.columns[0]].values.tolist())
-			allele_mx = filter_mx(allele_mx, mx, filters, "allele", logger)
-			final_samples = len(allele_mx[allele_mx.columns[0]].values.tolist())
-			logger.info("\tFrom the " + str(initial_samples) + " samples, " + str(final_samples) + " were kept in the matrix...")
-			allele_mx.to_csv(Path(args.folder).joinpath(args.out + "_subset_matrix.tsv"), sep = "\t", index = None)
-	
-	
-		# cleaning allele matrix (columns)	----------
-		
-		if args.samples_called and float(args.samples_called) != 1.0 and float(args.samples_called) != 0.0:
-			logger.info("Keeping only sites/loci with information in >= " + str(float(args.samples_called) * 100) + "% of the samples...")
-			
-			pos_t0 = len(allele_mx.columns[1:])
-			for col in allele_mx.columns[1:]:
-				values = allele_mx[col].values.tolist()
-				if (len(values)-values.count("0"))/len(values) < float(args.samples_called):
-					allele_mx = allele_mx.drop(columns=col)
-			allele_mx.to_csv(Path(args.folder).joinpath(args.out + "_flt_matrix.tsv"), index = False, header=True, sep ="\t")
-			pos_t1 = len(allele_mx.columns[1:])
-			logger.info("\tFrom the " + str(pos_t0) + " loci/positions, " + str(pos_t1) + " were kept in the matrix.")
-		
-		
-		# cleaning allele matrix (rows)	----------
-
-		if args.loci_called:
-			logger.info("Cleaning the profile matrix using a threshold of >" + str(args.loci_called) + " alleles/positions called per sample...")
-			
-			report_allele_mx = {}
-			
-			len_schema = len(allele_mx.columns) - 1
-			
-			report_allele_mx["samples"] = allele_mx[allele_mx.columns[0]]
-			report_allele_mx["missing"] = allele_mx.isin(["0"]).sum(axis=1)
-			report_allele_mx["called"] = len_schema - allele_mx.isin(["0"]).sum(axis=1)
-			report_allele_mx["pct_called"] = (len_schema - allele_mx.isin(["0"]).sum(axis=1)) / len_schema
-
-			report_allele_df = pandas.DataFrame(data = report_allele_mx)
-			if float(args.loci_called) != 1.0:
-				flt_report = report_allele_df[report_allele_df["pct_called"] > float(args.loci_called)]
-			else:
-				flt_report = report_allele_df[report_allele_df["pct_called"] == float(args.loci_called)]
-			pass_samples = flt_report["samples"].values.tolist()
-			
-			if len(pass_samples) == 0:
-				logger.info("Cannot proceed because " + str(len(pass_samples)) + " samples were kept in the matrix!")
-				sys.exit()
-		
-			logger.info("\tFrom the " + str(len(allele_mx[allele_mx.columns[0]].values.tolist())) + " samples, " + str(len(pass_samples)) + " were kept in the profile matrix.")
-			
-			allele_mx = allele_mx[allele_mx[allele_mx.columns[0]].isin(pass_samples)]
-			allele_mx.to_csv(Path(args.folder).joinpath(args.out + "_flt_matrix.tsv"), index = False, header=True, sep ="\t")
-			report_allele_df.to_csv(Path(args.folder).joinpath(args.out + "_loci_report.tsv"), index = False, header=True, sep ="\t")
-			
-			
-		# getting distance matrix	----------
-		
-		logger.info("Getting the pairwise distance matrix with cgmlst-dists...")
-		
-		
-		# convert ATCG to integers
-		allele_mx = conv_nucl(allele_mx)
-
-
+		print("Hello from from_allele_profile")
+		print("This is the dataframe I got:")
+		print(allele_mx)
 		# save allele matrix to a file that cgmlst-dists can use for input
-		allele_mx_path = Path(TMPDIR, hc.out, hc.out + '_allele_mx.tsv')
+		allele_mx_path = Path(TMPDIR, 'allele_mx.tsv')  #TODO we need to put the job id into the path
 		with open(allele_mx_path, 'w') as allele_mx_file_obj:
-			allele_mx_file_obj.write("ID")  # Without an initial string cgmlst-dists will fail!
+			allele_mx_file_obj.write("ID")  # Without an initial string in first line cgmlst-dists will fail!
 			allele_mx.to_csv(allele_mx_file_obj, index = True, header=True, sep ="\t")
 		
 		# run cgmlst-dists
