@@ -291,7 +291,7 @@ def from_allele_profile(allele_mx:DataFrame):
 			raise OSError(errmsg + "\n\n" + cp1.stderr)
 		
 		temp_df = pandas.read_table(StringIO(cp1.stdout), dtype=str)
-		temp_df.rename(columns = {"cgmlst-dists": "dists"}, inplace = True)
+		temp_df.rename(columns = {"cgmlst-dists": "ids"}, inplace = True)
 		# TODO here we are saving a file, then reading it. Why?
 		return temp_df
 
