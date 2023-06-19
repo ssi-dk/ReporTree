@@ -271,7 +271,7 @@ def get_newick(node, parent_dist, leaf_names, newick='') -> str:
         
         return newick
 
-def from_allele_profile(hc=None, logger=None, allele_mx:DataFrame=None):
+def from_allele_profile(allele_mx:DataFrame):
 		print("Hello from from_allele_profile")
 		print("This is the dataframe I got:")
 		print(allele_mx)
