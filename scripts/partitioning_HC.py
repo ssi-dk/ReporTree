@@ -293,9 +293,7 @@ def from_allele_profile(allele_mx:DataFrame):
 		temp_df = pandas.read_table(StringIO(cp1.stdout), dtype=str)
 		temp_df.rename(columns = {"cgmlst-dists": "dists"}, inplace = True)
 		# TODO here we are saving a file, then reading it. Why?
-		temp_df.to_csv(Path(args.folder).joinpath(args.out + "_dist.tsv"), sep = "\t", index = None)
-		dist = pandas.read_table(Path(args.folder).joinpath(args.out + "_dist.tsv"))
-		return dist
+		return temp_df
 
 def from_distance_matrix(hc=None, logger=None):
 	global args
